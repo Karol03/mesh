@@ -35,7 +35,7 @@ int main()
                            .create(std::move(nodeDescription2), std::move(edgeDescription));
 }
 ```
-![alt text](https://github.com/Karol03/mesh/blob/master/two_nodes_connection.jpg?raw=true)
+![alt text](https://github.com/Karol03/mesh/master/images/two_nodes_connection.jpg?raw=true)
 
 The program contains two nodes into mesh and one edge between them.
 <p>Note that 'create(...)' method takes up to two arguments, the first argument is descriptor of node, the second one is descriptor of edge.
@@ -69,7 +69,7 @@ int main()
                            .create(std::move(nodeDescription4));
 }
 ```
-![alt text](https://github.com/Karol03/mesh/blob/master/star_nodes_connection.jpg?raw=true)
+![alt text](https://github.com/Karol03/mesh/master/images/star_nodes_connection.jpg?raw=true)
 
 In the sample above we create center node 'Star topology center node', and then connects to it three nodes.
 As by default new nodes are always connected to last created one we could create 'Node 2' without any hop.
@@ -102,7 +102,7 @@ int main()
                            .connect(2, 3);
 }
 ```
-![alt text](https://github.com/Karol03/mesh/blob/master/add_nodes_connection.jpg?raw=true)
+![alt text](https://github.com/Karol03/mesh/master/images/add_nodes_connection.jpg?raw=true)
 
 
 <h3>Remove nodes</h3>
@@ -148,10 +148,10 @@ int main()
 }
 ```
 Before remove:
-![alt text](https://github.com/Karol03/mesh/blob/master/before_remove_nodes_connection.jpg?raw=true)
+![alt text](https://github.com/Karol03/mesh/master/images/before_remove_nodes_connection.jpg?raw=true)
 
 After remove:
-![alt text](https://github.com/Karol03/mesh/blob/master/after_remove_nodes_connection.jpg?raw=true)
+![alt text](https://github.com/Karol03/mesh/master/images/after_remove_nodes_connection.jpg?raw=true)
 
 
 <h3>Export mesh to/from string</h3>
