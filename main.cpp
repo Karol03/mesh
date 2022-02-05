@@ -14,78 +14,36 @@ int main()
 {
     using namespace mesh;
     using namespace mesh::objects;
-    using namespace mesh::utils;
 
-    {
-        auto mesh = mesh::Mesh{};
-        auto nodeDescription1 = mesh::objects::Description{"Node 1"};
-        auto nodeDescription2 = mesh::objects::Description{"Node 2"};
-        auto edgeDescription = mesh::objects::Description{"Edge between node 1 and node 2"};
-        mesh::MeshBuilder{mesh}.create()
-                               .create();
-        auto mp = MeshPack{mesh};
-        mp.to_file("meshfile.msh");  // here save mesh to binary
-        std::cout << mp.to_string() << '\n';
-    }
+    Mesh mesh;
 
-    {
-        auto mesh = mesh::Mesh{};
-        try {
-            auto meshPack = MeshPack{mesh};
-            meshPack.from_file("meshfile.msh");   // here load mesh from binary file
-            std::cout << "Our mesh:\n" << meshPack.to_string() << '\n';     // here print the result
-        } catch (std::invalid_argument& e) {
-            std::cerr << "Failed: " << e.what();
-        };
-    }
+    const auto print = [](const auto& elem) { std::cout << elem.to_string() << '\n'; };
+    MeshBuilder{mesh}.create(Description("Node 1"))
+                     .create(Description("Node 2"))
+                     .hopTo(1)
+                     .create(Description("Node 3"))
+                     .hopTo(1)
+                     .create(Description("Node 4"))
+                     .hopTo(1)
+                     .create(Description("Node 5"))
+                     .hopTo([](const auto& node) { return node.value().to_string() == "Node 3"; })
+                     .create(Description("Node 6"))
+                     .create(Description("Node 7"))
+                     .hopTo(6)
+                     .create(Description("Node 8"))
+                     .hopTo(3)
+                     .create(Description("Node 9"))
+                     .create(Description("Node 10"))
+                     .connect(8, 10, Description("Relation strength: 10"))
+                     .connect(9, 10)
+                     .connect(2, 9);
 
-//    using namespace mesh;
-//    using namespace mesh::objects;
+    MeshBuilder{mesh}.remove(3)
+                     .remove(6)
+                     .remove(8)
+                     .remove(9);
 
-//    Mesh mesh;
-
-//    std::string data;
-
-//    {
-//        const auto print = [](const auto& elem) { std::cout << elem.to_string() << '\n'; };
-//        MeshBuilder{mesh}.create(Description("Node 1"))
-//                        .create(Description("Node 2"))
-//                        .hopTo(1)
-//                        .create(Description("Node 3"))
-//                        .hopTo(1)
-//                        .create(Description("Node 4"))
-//                        .hopTo(1)
-//                        .create(Description("Node 5"))
-//                        .hopTo([](const auto& node) { return node.value().to_string() == "Node 3"; })
-//                        .create(Description("Node 6"))
-//                        .create(Description("Node 7"))
-//                        .hopTo(6)
-//                        .create(Description("Node 8"))
-//                        .hopTo(3)
-//                        .create(Description("Node 9"))
-//                        .create(Description("Node 10"))
-//                        .connect(8, 10, Description("Relation strength: 10"))
-//                        .connect(9, 10)
-//                        .connect(2, 9);
-//         MeshBuilder{mesh}.remove(3)
-//             .remove(6)
-//             .remove(8)
-//             .remove(9);
-
-//        utils::MeshPack pack{mesh};
-//        data = pack.to_string();
-//        std::cout << data << '\n';
-
-//        pack.to_file("save_mesh");
-//    }
-
-//    {
-//        utils::MeshPack pack(mesh);
-//        if (pack.from_string(data))
-//        {
-//            std::cout << "Parsed correctly!\n";
-//        }
-
-//        std::cout << pack.to_string() << '\n';
-//    }
+    auto mp = utils::MeshPack{mesh};
+    std::cout << mp.to_string() << '\n';
+    mp.to_file("save_mesh.msh");
 }
