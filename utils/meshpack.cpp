@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <optional>
+#include <iostream>
 #include <sstream>
 
 
@@ -44,12 +45,9 @@ std::optional<std::size_t> get_size_t(mesh::utils::MeshPack::StringFile& str)
 
 std::optional<std::size_t> get_size_t(std::ifstream& str)
 {
-    auto result = std::size_t{};
-    if ((str >> result))
-    {
-        return result;
-    }
-    return {};
+    auto result = std::uint32_t{};
+    str.read(reinterpret_cast<char*>(&result), sizeof(result));
+    return result;
 }
 
 std::optional<std::string> get_string(mesh::utils::MeshPack::StringFile& str)
@@ -80,12 +78,12 @@ std::optional<std::string> get_string(mesh::utils::MeshPack::StringFile& str)
 
 std::optional<std::string> get_string(std::ifstream& str)
 {
+    auto size = std::uint32_t{};
     auto result = std::string{};
-    if ((str >> result))
-    {
-        return result;
-    }
-    return {};
+    result.reserve(size);
+    str.read(reinterpret_cast<char*>(&size), sizeof(size));
+    str.read(reinterpret_cast<char*>(&result), size);
+    return result;
 }
 }  // namespace
 
@@ -198,10 +196,6 @@ void mesh_load(Mesh& m_mesh,
     std::swap(m_mesh, mesh);
 }
 
-
-
-
-
 bool MeshPack::from_string(std::string data)
 {
     constexpr auto POS_ZERO = 0u;
@@ -216,21 +210,36 @@ bool MeshPack::from_string(std::string data)
 
 bool MeshPack::to_file(std::filesystem::path filename) const
 {
-    auto output = std::ofstream{filename, std::ios::binary};
-    output << m_mesh.m_nodes.size() << m_mesh.m_edges.size();
+    auto output = std::ofstream{filename, std::ios::binary | std::ios::trunc};
+    auto nodeSize = static_cast<uint32_t>(m_mesh.m_nodes.size());
+    auto edgeSize = static_cast<uint32_t>(m_mesh.m_edges.size());
+    output.write(reinterpret_cast<char*>(&nodeSize), sizeof(nodeSize));
+    output.write(reinterpret_cast<char*>(&edgeSize), sizeof(edgeSize));
 
     for (const auto& nodeItem : m_mesh.m_nodes)
     {
+        auto nodeId = uint32_t{nodeItem.first};
         auto description = nodeItem.second.value().to_string();
-        output << nodeItem.first << description.c_str();
+        auto descriptionSize = static_cast<uint32_t>(description.size());
+
+        output.write(reinterpret_cast<char*>(&nodeId), sizeof(nodeId));
+        output.write(reinterpret_cast<char*>(&descriptionSize), sizeof(descriptionSize));
+        output.write(description.c_str(), descriptionSize);
     }
 
     for (const auto& edgeItem : m_mesh.m_edges)
     {
+        auto edgeId = uint32_t{edgeItem.first};
+        auto edgeFirstNodeId = uint32_t{edgeItem.second.nodes().first};
+        auto edgeSecondNodeId = uint32_t{edgeItem.second.nodes().second};
         auto description = edgeItem.second.value().to_string();
-        output << edgeItem.first << edgeItem.second.nodes().first
-               << edgeItem.second.nodes().second
-               << description.c_str();
+        auto descriptionSize = static_cast<uint32_t>(description.size());
+
+        output.write(reinterpret_cast<char*>(&edgeId), sizeof(edgeId));
+        output.write(reinterpret_cast<char*>(&edgeFirstNodeId), sizeof(edgeFirstNodeId));
+        output.write(reinterpret_cast<char*>(&edgeSecondNodeId), sizeof(edgeSecondNodeId));
+        output.write(reinterpret_cast<char*>(&descriptionSize), sizeof(descriptionSize));
+        output.write(description.c_str(), descriptionSize);
     }
 
     return true;

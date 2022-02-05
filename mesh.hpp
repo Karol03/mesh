@@ -41,7 +41,13 @@ public:
 
     void tie(uint32_t leftNodeId, uint32_t rightNodeId,
              objects::Description edgeDescription = objects::Description{});
+    void tie(uint32_t leftNodeId, std::function<bool(const objects::Node&)> rightNodePredicate,
+             objects::Description edgeDescription = objects::Description{});
+    void tie(std::function<bool(const objects::Node&)> leftNodePredicate,
+             std::function<bool(const objects::Node&)> rightNodePredicate,
+             objects::Description edgeDescription = objects::Description{});
 
+    void detach();
     void detach(uint32_t id);
     void detach(std::vector<uint32_t> range);
     void detach(std::function<bool(const objects::Node&)> predicate);

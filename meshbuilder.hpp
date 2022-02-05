@@ -17,18 +17,18 @@ public:
     {}
 
     template <typename... Args>
-    MeshBuilder& connect(uint32_t leftNodeId, uint32_t rightNodeId, Args&&... args)
+    MeshBuilder& connect(Args&&... args)
     {
-        m_mesh.tie(leftNodeId, rightNodeId, std::forward<Args>(args)...);
+        m_mesh.tie(std::forward<Args>(args)...);
         return *this;
     }
 
     template <typename... Args>
-    MeshBuilder& connectTo(uint32_t destinationNodeId, Args&&... args)
+    MeshBuilder& connectTo(Args&&... args)
     {
         if (m_mesh.m_current != 0)
         {
-            m_mesh.tie(m_mesh.m_current, destinationNodeId, std::forward<Args>(args)...);
+            m_mesh.tie(m_mesh.m_current, std::forward<Args>(args)...);
         }
         return *this;
     }

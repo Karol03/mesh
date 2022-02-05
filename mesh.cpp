@@ -67,6 +67,73 @@ void Mesh::tie(uint32_t leftNodeId, uint32_t rightNodeId,
     m_edges.insert({edgeId, std::move(edge)});
 }
 
+void Mesh::tie(uint32_t leftNodeId,
+               std::function<bool(const objects::Node&)> rightNodePredicate,
+               objects::Description edgeDescription)
+{
+    if (!contains(m_nodes, leftNodeId))
+    {
+        return;
+    }
+
+    auto rightNodeId = 0u;
+    for (const auto& item : m_nodes)
+    {
+        if (rightNodePredicate(item.second))
+        {
+            rightNodeId = item.first;
+            if (leftNodeId == rightNodeId)
+            {
+                return;
+            }
+            tie(leftNodeId, rightNodeId, std::move(edgeDescription));
+        }
+    }
+}
+
+void Mesh::tie(std::function<bool(const objects::Node&)> leftNodePredicate,
+               std::function<bool(const objects::Node&)> rightNodePredicate,
+               objects::Description edgeDescription)
+{
+    auto leftNodeId = 0u;
+    auto rightNodeId = 0u;
+
+    for (const auto& item : m_nodes)
+    {
+        if (leftNodePredicate(item.second))
+        {
+            leftNodeId = item.first;
+            if (leftNodeId != 0 && rightNodeId != 0)
+            {
+                if (leftNodeId == rightNodeId)
+                {
+                    return;
+                }
+                tie(leftNodeId, rightNodeId, std::move(edgeDescription));
+            }
+        }
+        else if (rightNodePredicate(item.second))
+        {
+            rightNodeId = item.first;
+            if (leftNodeId != 0 && rightNodeId != 0)
+            {
+                if (leftNodeId == rightNodeId)
+                {
+                    return;
+                }
+                tie(leftNodeId, rightNodeId, std::move(edgeDescription));
+            }
+        }
+    }
+}
+
+void Mesh::detach()
+{
+    if (m_current != 0)
+    {
+        detach(m_current);
+    }
+}
 
 void Mesh::detach(uint32_t id)
 {
