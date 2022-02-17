@@ -10,18 +10,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(mesh
     main.cpp
 
-    mesh.cpp
     mesh.hpp
-
-    meshbuilder.cpp
     meshbuilder.hpp
 
-    objects/description.hpp
     objects/edge.hpp
     objects/imobject.hpp
     objects/node.hpp
     objects/types.hpp
 
-    utils/meshpack.cpp
     utils/meshpack.hpp
 )

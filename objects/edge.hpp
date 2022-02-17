@@ -5,7 +5,6 @@
 
 #include <sstream>
 
-#include "description.hpp"
 #include "imobject.hpp"
 
 
@@ -14,6 +13,7 @@ namespace mesh
 namespace objects
 {
 
+template <typename Description>
 struct Edge : public IEdge
 {
     using U32Pair = IMObject::U32Pair;
@@ -38,7 +38,7 @@ public:
     {
         auto result = std::stringstream{};
         result << "edge (" << m_nodes.first << " <-> " << m_nodes.second << ") {"
-               << m_description.to_string()
+               << m_description
                << "}";
         return result.str();
     }

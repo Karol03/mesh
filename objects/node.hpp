@@ -5,7 +5,6 @@
 
 #include <sstream>
 
-#include "description.hpp"
 #include "imobject.hpp"
 
 
@@ -14,6 +13,7 @@ namespace mesh
 namespace objects
 {
 
+template <typename Description>
 struct Node : public INode
 {
     using U32Set = IMObject::U32Set;
@@ -54,7 +54,7 @@ public:
             result << "]";
         }
         result << " {"
-               << m_description.to_string()
+               << m_description
                << "}";
         return result.str();
     }
