@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <optional>
 
 #include "mesh.hpp"
 #include "objects/types.hpp"
@@ -15,7 +16,7 @@ namespace mesh
 namespace utils
 {
 
-template <typename Description>
+template <typename NodeDescription, typename EdgeDescription>
 class MeshPack
 {
 public:
@@ -26,7 +27,7 @@ public:
     };
 
 public:
-    explicit MeshPack(Mesh<Description>& mesh)
+    explicit MeshPack(Mesh<NodeDescription, EdgeDescription>& mesh)
         : m_mesh{mesh}
     {}
 
@@ -112,14 +113,14 @@ public:
 
 private:
     template <typename T>
-    void mesh_load(Mesh<Description>& m_mesh,
+    void mesh_load(Mesh<NodeDescription, EdgeDescription>& m_mesh,
                    T& str,
-                   std::function<uint32_t(Mesh<Description>&, Description)> nodeInsertion,
-                   std::function<uint32_t(Mesh<Description>&, uint32_t, uint32_t, Description)> edgeInsertion,
-                   std::function<void(Mesh<Description>&, uint32_t, uint32_t)> nodeEdgesInsertion)
+                   std::function<uint32_t(Mesh<NodeDescription, EdgeDescription>&, NodeDescription)> nodeInsertion,
+                   std::function<uint32_t(Mesh<NodeDescription, EdgeDescription>&, uint32_t, uint32_t, EdgeDescription)> edgeInsertion,
+                   std::function<void(Mesh<NodeDescription, EdgeDescription>&, uint32_t, uint32_t)> nodeEdgesInsertion)
     {
         auto nodeIdsMapping = objects::types::U32U32Map{};
-        auto mesh = Mesh<Description>{};
+        auto mesh = Mesh<NodeDescription, EdgeDescription>{};
 
         auto nodesNumber = get_size_t(str);
         auto edgesNumber = get_size_t(str);
@@ -140,7 +141,7 @@ private:
             }
             else
             {
-                auto newNodeId = nodeInsertion(mesh, Description{*nodeDesc});
+                auto newNodeId = nodeInsertion(mesh, NodeDescription{*nodeDesc});
                 nodeIdsMapping.insert({*nodeId, newNodeId});
             }
         }
@@ -185,7 +186,7 @@ private:
                     throw std::invalid_argument{result.str()};
                 }
 
-                auto newEdgeId = edgeInsertion(mesh, firstNodeId, secondNodeId, Description{*edgeDesc});
+                auto newEdgeId = edgeInsertion(mesh, firstNodeId, secondNodeId, EdgeDescription{*edgeDesc});
                 nodeEdgesInsertion(mesh, firstNodeId, newEdgeId);
                 nodeEdgesInsertion(mesh, secondNodeId, newEdgeId);
             }
@@ -266,7 +267,7 @@ private:
     }
 
 private:
-    Mesh<Description>& m_mesh;
+    Mesh<NodeDescription, EdgeDescription>& m_mesh;
 };
 
 }  // namespace utils

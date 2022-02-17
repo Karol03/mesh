@@ -14,27 +14,30 @@
 
 namespace mesh
 {
-template <typename Description>
+template <typename NodeDescription, typename EdgeDescription>
 class MeshBuilder;
 
 namespace utils
 {
-template <typename Description>
+template <typename NodeDescription, typename EdgeDescription>
 class MeshPack;
 }  // namespace utils
 
-template <typename Description>
+template <typename NodeDescription, typename EdgeDescription = NodeDescription>
 struct Mesh
 {
-    friend class MeshBuilder<Description>;
-    friend class utils::MeshPack<Description>;
+    friend class MeshBuilder<NodeDescription, EdgeDescription>;
+    friend class utils::MeshPack<NodeDescription, EdgeDescription>;
 
     using U32PairMap = objects::types::U32PairMap;
-    using U32EdgeMap = objects::types::U32EdgeMap<Description>;
-    using U32NodeMap = objects::types::U32NodeMap<Description>;
+    using U32EdgeMap = objects::types::U32EdgeMap<EdgeDescription>;
+    using U32NodeMap = objects::types::U32NodeMap<NodeDescription>;
     using U32Pair = objects::types::U32Pair;
     using U32PairPriorityQueue = objects::types::U32PairPriorityQueue;
     using U32Set = objects::types::U32Set;
+    using NodePredicate = std::function<bool(const NodeDescription&)>;
+    using NodeVisitFunction = std::function<void(const NodeDescription&)>;
+    using EdgeVisitFunction = std::function<void(const EdgeDescription&)>;
 
 public:
     explicit Mesh()
@@ -43,8 +46,8 @@ public:
         , m_current{}
     {}
 
-    void attach(Description nodeDescription = Description{},
-                Description edgeDescription = Description{})
+    void attach(NodeDescription nodeDescription = NodeDescription{},
+                EdgeDescription edgeDescription = EdgeDescription{})
     {
         if (m_current == 0)
         {
@@ -72,17 +75,17 @@ public:
         }
     }
 
-    void tie(uint32_t leftNodeId, uint32_t rightNodeId,
-             Description edgeDescription = Description{})
+    void tie(uint32_t firstNodeId, uint32_t secondNodeId,
+             EdgeDescription edgeDescription = EdgeDescription{})
     {
-        if (!contains(m_nodes, leftNodeId) ||
-            !contains(m_nodes, rightNodeId))
+        if (!contains(m_nodes, firstNodeId) ||
+            !contains(m_nodes, secondNodeId))
         {
             return;
         }
 
-        auto& leftNodeEdges = m_nodes[leftNodeId].edges();
-        auto& rightNodeEdges = m_nodes[rightNodeId].edges();
+        auto& leftNodeEdges = m_nodes[firstNodeId].edges();
+        auto& rightNodeEdges = m_nodes[secondNodeId].edges();
         if (isIntersection(leftNodeEdges, rightNodeEdges))
         {
             return;
@@ -90,18 +93,18 @@ public:
 
         auto edge = objects::Edge{std::move(edgeDescription)};
         auto edgeId = edgeIdGenerator();
-        edge.nodes().first = leftNodeId;
-        edge.nodes().second = rightNodeId;
+        edge.nodes().first = firstNodeId;
+        edge.nodes().second = secondNodeId;
         leftNodeEdges.insert(edgeId);
         rightNodeEdges.insert(edgeId);
         m_edges.insert({edgeId, std::move(edge)});
     }
 
-    void tie(uint32_t leftNodeId,
-             std::function<bool(const objects::Node<Description>&)> rightNodePredicate,
-             Description edgeDescription = Description{})
+    void tie(uint32_t firstNodeId,
+             NodePredicate secondNodePredicate,
+             EdgeDescription edgeDescription = EdgeDescription{})
     {
-        if (!contains(m_nodes, leftNodeId))
+        if (!contains(m_nodes, firstNodeId))
         {
             return;
         }
@@ -109,49 +112,49 @@ public:
         auto rightNodeId = 0u;
         for (const auto& item : m_nodes)
         {
-            if (rightNodePredicate(item.second))
+            if (secondNodePredicate(item.second.value()))
             {
                 rightNodeId = item.first;
-                if (leftNodeId == rightNodeId)
+                if (firstNodeId == rightNodeId)
                 {
                     return;
                 }
-                tie(leftNodeId, rightNodeId, std::move(edgeDescription));
+                tie(firstNodeId, rightNodeId, std::move(edgeDescription));
             }
         }
     }
 
-    void tie(std::function<bool(const objects::Node<Description>&)> leftNodePredicate,
-             std::function<bool(const objects::Node<Description>&)> rightNodePredicate,
-             Description edgeDescription = Description{})
+    void tie(NodePredicate firstNodePredicate,
+             NodePredicate secondNodePredicate,
+             EdgeDescription edgeDescription = EdgeDescription{})
     {
-        auto leftNodeId = 0u;
+        auto firstNodeId = 0u;
         auto rightNodeId = 0u;
 
         for (const auto& item : m_nodes)
         {
-            if (leftNodePredicate(item.second))
+            if (firstNodePredicate(item.second.value()))
             {
-                leftNodeId = item.first;
-                if (leftNodeId != 0 && rightNodeId != 0)
+                firstNodeId = item.first;
+                if (firstNodeId != 0 && rightNodeId != 0)
                 {
-                    if (leftNodeId == rightNodeId)
+                    if (firstNodeId == rightNodeId)
                     {
                         return;
                     }
-                    tie(leftNodeId, rightNodeId, std::move(edgeDescription));
+                    tie(firstNodeId, rightNodeId, std::move(edgeDescription));
                 }
             }
-            else if (rightNodePredicate(item.second))
+            else if (secondNodePredicate(item.second.value()))
             {
                 rightNodeId = item.first;
-                if (leftNodeId != 0 && rightNodeId != 0)
+                if (firstNodeId != 0 && rightNodeId != 0)
                 {
-                    if (leftNodeId == rightNodeId)
+                    if (firstNodeId == rightNodeId)
                     {
                         return;
                     }
-                    tie(leftNodeId, rightNodeId, std::move(edgeDescription));
+                    tie(firstNodeId, rightNodeId, std::move(edgeDescription));
                 }
             }
         }
@@ -232,12 +235,12 @@ public:
         }
     }
 
-    void detach(std::function<bool(const objects::Node<Description>&)> predicate)
+    void detach(NodePredicate predicate)
     {
         auto detachRange = std::vector<uint32_t>{};
         for (const auto& item : m_nodes)
         {
-            if (predicate(item.second))
+            if (predicate(item.second.value()))
             {
                 detachRange.push_back(item.first);
             }
@@ -245,17 +248,16 @@ public:
         detach(std::move(detachRange));
     }
 
-    void visit(std::function<void(const objects::Node<Description>&)> nodePredicate,
-               std::function<void(const objects::Edge<Description>&)> edgePredicate) const
+    void visit(NodeVisitFunction nodeVisit, EdgeVisitFunction edgeVisit) const
     {
         for (const auto& node : m_nodes)
         {
-            nodePredicate(node.second);
+            nodeVisit(node.second.value());
         }
 
         for (const auto& edge : m_edges)
         {
-            edgePredicate(edge.second);
+            edgeVisit(edge.second.value());
         }
     }
 
@@ -545,7 +547,7 @@ private:
         }
     }
 
-    uint32_t insertNode(Description description)
+    uint32_t insertNode(NodeDescription description)
     {
         auto node = objects::Node{std::move(description)};
         auto nodeId = nodeIdGenerator();
@@ -553,7 +555,7 @@ private:
         return nodeId;
     }
 
-    uint32_t insertEdge(U32Pair endpointNodes, Description description)
+    uint32_t insertEdge(U32Pair endpointNodes, EdgeDescription description)
     {
         auto edge = objects::Edge{std::move(description)};
         auto edgeId = edgeIdGenerator();

@@ -12,14 +12,14 @@
 namespace mesh
 {
 
-template <typename Description>
+template <typename NodeDescription, typename EdgeDescription>
 class MeshBuilder
 {
-    using NodePredicate = std::function<bool(const objects::Node<Description>&)>;
-    using NodePredicateVec = std::vector<std::function<bool(const objects::Node<Description>&)>>;
+    using NodePredicate = std::function<bool(const objects::Node<NodeDescription>&)>;
+    using NodePredicateVec = std::vector<std::function<bool(const objects::Node<NodeDescription>&)>>;
 
 public:
-    explicit MeshBuilder(Mesh<Description>& mesh)
+    explicit MeshBuilder(Mesh<NodeDescription, EdgeDescription>& mesh)
         : m_mesh{mesh}
     {}
 
@@ -127,14 +127,11 @@ public:
             if (!isConnected(firstNodeId, secondNodeId))
             {
                 m_mesh.m_current = 0;
-                std::cout << "Path from " << firstNodeId << " to " << secondNodeId
-                          << " not exist \n";
                 return *this;
             }
         }
 
         m_mesh.m_current = pathIds.back();
-        std::cout << "Path exist - set : " << pathIds.back() << '\n';
         return *this;
     }
 
@@ -225,7 +222,7 @@ public:
         return m_mesh.m_current;
     }
 
-    std::optional<Description> currentValue()
+    std::optional<NodeDescription> currentValue()
     {
         auto it = m_mesh.m_nodes.find(m_mesh.m_current);
         if (it != m_mesh.m_nodes.end())
@@ -391,7 +388,7 @@ private:
     }
 
 private:
-    Mesh<Description>& m_mesh;
+    Mesh<NodeDescription, EdgeDescription>& m_mesh;
 };
 
 }  // namespace mesh
